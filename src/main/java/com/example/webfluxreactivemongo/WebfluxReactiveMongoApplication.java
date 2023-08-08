@@ -5,6 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.ReadOnlyProperty;
 import org.springframework.data.mongodb.core.annotation.Collation;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
@@ -15,7 +16,7 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
+import static java.util.Objects.nonNull;
 
 @SpringBootApplication
 public class WebfluxReactiveMongoApplication {
@@ -27,7 +28,7 @@ public class WebfluxReactiveMongoApplication {
 }
 
 @Collation
-record Feed(@Id String id, @DBRef Message message) {}
+record Feed(@Id String id, @DBRef(lazy = true) Message message) {}
 @Collation
 record Message(@Id String id, String text /*, @DBRef List<Text> texts*/) {}
 @Collation
@@ -83,7 +84,7 @@ class Routers {
 		var feedWithMessage = feedRepository
 				.findAll()
 				.flatMap(feed -> messageRepository
-						.findById(feed.message().id())
+						.findById(nonNull(feed.message()) ? feed.message().id() : "")
 						.map(message -> new Feed(feed.id(), message))
 				);
 
